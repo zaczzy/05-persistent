@@ -40,6 +40,7 @@ import qualified Data.Foldable as Foldable
 And we'll use QuickCheck for testing.
 -}
 
+import qualified Data.List
 import Test.QuickCheck hiding (elements)
 
 {-
@@ -188,7 +189,7 @@ Now define a red-black tree that violates invariant 4.
 -}
 
 bad3 :: RBT Int
-bad3 = undefined
+bad3 = Root $ N B (N R (N R E 1 E) 2 E) 3 E
 
 {-
 Now define a red-black tree that isn't a binary search tree (i.e. the *values*
@@ -196,7 +197,7 @@ stored in the tree are not in strictly increasing order).
 -}
 
 bad4 :: RBT Int
-bad4 = undefined
+bad4 = Root $ N B (N R E 4 E) 2 (N R E 1 E)
 
 {-
 All sample trees, plus the empty tree for good measure.
@@ -272,7 +273,10 @@ isRootBlack (Root t) = color t == B
 -}
 
 consistentBlackHeight :: RBT a -> Bool
-consistentBlackHeight = undefined
+consistentBlackHeight (Root (N _ l _ r)) =
+  consistentBlackHeight (Root l) && consistentBlackHeight (Root r)
+    && blackHeight l == blackHeight r
+consistentBlackHeight (Root E) = True
 
 {-
 4. All children of red nodes are black.
@@ -404,6 +408,14 @@ prop_DeleteValid t x = prop_Valid (delete x t)
 
 prop_ShrinkValid :: RBT A -> Property
 prop_ShrinkValid t = conjoin (map prop_Valid (shrink t))
+
+-- Post conditions of find
+prop_FindPost :: RBT A -> A -> Property
+prop_FindPost t x = property $ member x (insert x t) && not (member x (delete x t))
+
+-- Model based properties
+prop_InsertModel :: RBT A -> A -> Property
+prop_InsertModel t x = property $ elements (insert x t) == Data.List.insert x (Data.List.delete x (elements t))
 
 {-
 * Metamorphic Testing

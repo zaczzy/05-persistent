@@ -5,9 +5,12 @@ fulltitle: "In class exercise: Purely Functional Queues"
 
 Today's technical challenge is to implement a persistent *queue* data structure.
 -}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Queue where
 
+import Data.List as List
 {-
 You should use quickcheck to test this module. If you want to use additional
 library operations to complete this exercise, you may import them here. (For
@@ -29,11 +32,11 @@ import Test.QuickCheck
 -}
 
 -- replace these definitions with something more appropriate
-data Q = Q
+data Q a = Q [a] [a] deriving (Eq, Show)
 
-empty :: Q
-enq :: Q
-deq :: Q
+empty :: Q a
+enq :: Q a -> a -> Q a
+deq :: Q a -> (a, Q a)
 {-
 2. Now define some properties that your queue should satisfy. (Note: if you want
 to add additional operations to your queue interface to help with stating
@@ -44,16 +47,33 @@ these properties, you may.)
 3. Implement your interface.
 -}
 
-empty = undefined
+empty = Q [] []
 
-enq = undefined
+enq (Q enQ deQ) x =
+  Q (x : enQ) deQ
 
-deq = undefined
+deq (Q [] []) = error "Empty Queue"
+deq (Q enQ []) =
+  let (h : hs) = List.reverse enQ
+   in (h, Q [] hs)
+deq (Q x (y : end)) = (y, Q x end)
 
 {-
 4. Make an arbitrary instance.
 -}
+instance Arbitrary a => Arbitrary (Q a) where
+  arbitrary :: Gen (Q a)
+  arbitrary = Q <$> arbitrary <*> arbitrary
+
+  shrink :: Q a -> [Q a]
+  shrink (Q l1 l2) = Q <$> shrink l1 <*> shrink l2
 
 {-
 5. Run your tests.
 -}
+-- Validity
+-- Preserves order. If we implement fromList and toList.
+
+-- Post condition
+-- Metamorphic
+-- Model based
